@@ -1,4 +1,4 @@
-import { SimConfig, Country } from './types';
+import { SimConfig, Country, Vec2, Unit } from './types';
 import { createWorld, addCountry, spawnUnitsForCountry } from './core/World';
 import { createCamera } from './core/Camera';
 import { Simulation } from './core/Simulation';
@@ -22,9 +22,8 @@ const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 const statsDiv = document.getElementById('stats') as HTMLDivElement;
 const startBtn = document.getElementById('startBtn') as HTMLButtonElement;
 const stopBtn = document.getElementById('stopBtn') as HTMLButtonElement;
-const addCountryBtn = document.getElementById(
-  'addCountryBtn'
-) as HTMLButtonElement;
+const placeCountryBtn = document.getElementById('placeCountryBtn') as HTMLButtonElement;
+const unitInfoDiv = document.getElementById('unitInfo') as HTMLDivElement;
 
 // Авторесайз канваса
 function resizeCanvas() {
@@ -47,6 +46,10 @@ const inputManager = new InputManager(canvas, camera);
 
 resizeCanvas();
 
+// ===== Состояние приложения =====
+let placingCountry = false;
+let selectedUnit: Unit | null = null;
+
 // ===== Добавление стартовых стран =====
 const countryColors = [
   '#ff3333',
@@ -58,13 +61,7 @@ const countryColors = [
 ];
 let countryCounter = 0;
 
-function createRandomCountry(): Country {
-  const padding = 300;
-  const x =
-    padding + Math.random() * (config.worldSize.width - padding * 2);
-  const y =
-    padding + Math.random() * (config.worldSize.height - padding * 2);
-
+function createCountryAtPosition(pos: Vec2): Country {
   const country: Country = {
     id: `country_${countryCounter}`,
     name: `Страна ${countryCounter + 1}`,
@@ -72,18 +69,11 @@ function createRandomCountry(): Country {
     population: 0,
     resources: 1000,
     territory: [],
-    capital: { x, y }
+    capital: pos
   };
 
   countryCounter++;
   return country;
-}
-
-// Добавляем 2 страны по умолчанию
-for (let i = 0; i < 2; i++) {
-  const country = createRandomCountry();
-  addCountry(world, country);
-  spawnUnitsForCountry(world, country, config.startingUnitsPerCountry);
 }
 
 // ===== Управление =====
@@ -99,25 +89,75 @@ stopBtn.addEventListener('click', () => {
   stopBtn.disabled = true;
 });
 
-addCountryBtn.addEventListener('click', () => {
-  const country = createRandomCountry();
-  addCountry(world, country);
-  spawnUnitsForCountry(world, country, config.startingUnitsPerCountry);
+placeCountryBtn.addEventListener('click', () => {
+  placingCountry = !placingCountry;
+  placeCountryBtn.textContent = placingCountry ? 'Отменить размещение' : 'Разместить страну';
+  placeCountryBtn.style.background = placingCountry ? '#ff8800' : '#3388ff';
+  canvas.style.cursor = placingCountry ? 'crosshair' : 'grab';
 });
 
-// Спавн юнита по правой кнопке мыши
-inputManager.onSpawnUnit = worldPos => {
-  if (world.countries.length === 0) return;
+// Обработка кликов для размещения стран и выбора юнитов
+inputManager.onLeftClick = (worldPos: Vec2) => {
+  if (placingCountry) {
+    // Размещение новой страны
+    const country = createCountryAtPosition(worldPos);
+    addCountry(world, country);
+    spawnUnitsForCountry(world, country, config.startingUnitsPerCountry, config);
+    
+    placingCountry = false;
+    placeCountryBtn.textContent = 'Разместить страну';
+    placeCountryBtn.style.background = '#3388ff';
+    canvas.style.cursor = 'grab';
+  } else {
+    // Выбор юнита
+    const clickRadius = 15 / camera.zoom;
+    let foundUnit: Unit | null = null;
+    let minDist = clickRadius;
 
-  const country = world.countries[Math.floor(Math.random() * world.countries.length)];
-  const unit = createUnit(
-    worldPos,
-    country.id,
-    Math.random() > 0.5,
-    config.neuralNetworkShape
-  );
-  simulation.addUnit(unit);
+    world.units.forEach(unit => {
+      if (!unit.alive) return;
+      const dx = unit.position.x - worldPos.x;
+      const dy = unit.position.y - worldPos.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < minDist) {
+        minDist = dist;
+        foundUnit = unit;
+      }
+    });
+
+    selectedUnit = foundUnit;
+    renderer.selectedUnit = selectedUnit;
+    updateUnitInfo();
+  }
 };
+
+// Обновление информации о юните
+function updateUnitInfo() {
+  if (!selectedUnit || !selectedUnit.alive) {
+    unitInfoDiv.innerHTML = '<div style="color: #888;">Кликните на юнита для просмотра характеристик</div>';
+    selectedUnit = null;
+    renderer.selectedUnit = null;
+    return;
+  }
+
+  const country = world.countries.find(c => c.id === selectedUnit!.countryId);
+  const typeText = selectedUnit.type === UnitType.MILITARY ? 'Военный' : 'Гражданский';
+  const typeColor = selectedUnit.type === UnitType.MILITARY ? '#00ff00' : '#3388ff';
+
+  unitInfoDiv.innerHTML = `
+    <div style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #333;">
+      <strong style="color: ${typeColor};">${typeText}</strong>
+    </div>
+    <div><strong>Страна:</strong> ${country?.name || 'Неизвестно'}</div>
+    <div><strong>Здоровье:</strong> <span style="color: ${selectedUnit.health > 50 ? '#00ff00' : '#ff0000'};">${selectedUnit.health.toFixed(1)}%</span></div>
+    <div><strong>Энергия:</strong> <span style="color: ${selectedUnit.energy > 50 ? '#00ff88' : '#ffaa00'};">${selectedUnit.energy.toFixed(1)}%</span></div>
+    <div><strong>Возраст:</strong> ${selectedUnit.age.toFixed(1)}s</div>
+    <div><strong>Позиция:</strong> (${selectedUnit.position.x.toFixed(0)}, ${selectedUnit.position.y.toFixed(0)})</div>
+    <div><strong>Скорость:</strong> ${Math.sqrt(selectedUnit.velocity.x ** 2 + selectedUnit.velocity.y ** 2).toFixed(1)}</div>
+    <div><strong>Фитнес:</strong> ${selectedUnit.brain.fitness.toFixed(2)}</div>
+  `;
+}
 
 // ===== Цикл рендеринга =====
 function renderLoop() {
@@ -133,9 +173,14 @@ function renderLoop() {
     <div><strong>Зум:</strong> ${camera.zoom.toFixed(2)}x</div>
   `;
 
+  // Обновление информации о выбранном юните
+  if (selectedUnit) {
+    updateUnitInfo();
+  }
+
   requestAnimationFrame(renderLoop);
 }
 
 renderLoop();
 
-console.log('AiSim запущен! Нажмите START для начала симуляции.');
+console.log('AiSim запущен! Нажмите РАЗМЕСТИТЬ СТРАНУ для начала.');

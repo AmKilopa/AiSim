@@ -5,6 +5,7 @@ export class Renderer {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   camera: Camera;
+  selectedUnit: Unit | null = null;
 
   constructor(canvas: HTMLCanvasElement, camera: Camera) {
     this.canvas = canvas;
@@ -145,10 +146,10 @@ export class Renderer {
         this.canvas.height
       );
 
-      const country = world.countries.find(c => c.id === unit.countryId);
-      const baseColor = country?.color || '#ffffff';
+      // НОВОЕ: цвета по типу юнита
+      const baseColor = unit.type === UnitType.CIVILIAN ? '#3388ff' : '#00ff00';
 
-      // Разные размеры для военных и гражданских
+      // Размеры
       const radius =
         unit.type === UnitType.MILITARY
           ? 6 * this.camera.zoom
@@ -163,6 +164,15 @@ export class Renderer {
       if (unit.type === UnitType.MILITARY) {
         this.ctx.strokeStyle = '#ffffff';
         this.ctx.lineWidth = 1.5;
+        this.ctx.stroke();
+      }
+
+      // Подсветка выбранного юнита
+      if (this.selectedUnit && this.selectedUnit.id === unit.id) {
+        this.ctx.strokeStyle = '#ffff00';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.arc(screenPos.x, screenPos.y, radius + 4, 0, Math.PI * 2);
         this.ctx.stroke();
       }
 
