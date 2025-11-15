@@ -50,38 +50,42 @@ export class Simulation {
         u1.pregnant=false;
         u1.children+=childrenNum;
         for(let c=0;c<childrenNum;c++){
-            this.world.units.push({
-                id:`unit_${this.world.units.length}`,
-                type:u1.type,
-                isWorker:Math.random()<0.5,
-                gender:Math.random()<0.5?'male':'female',
-                age:1,
-                position:{x:u1.position.x+8*(Math.random()-0.5),y:u1.position.y+8*(Math.random()-0.5)},
-                velocity:{x:0,y:0},
-                health:100,
-                energy:90,
-                brain:u1.brain,
-                countryId:u1.countryId,
-                alive:true,
-                resources:0,
-                children:0,
-                spouseId:'',
-                pregnant:false,
-                lastRepro:this.world.time});
-            }
+          this.world.units.push({
+            id:`unit_${this.world.units.length}`,
+            type:u1.type,
+            isWorker:Math.random()<0.5,
+            gender:Math.random()<0.5?'male':'female',
+            age:1,
+            position:{x:u1.position.x+8*(Math.random()-0.5),y:u1.position.y+8*(Math.random()-0.5)},
+            velocity:{x:0,y:0},
+            health:100,
+            energy:90,
+            brain:u1.brain,
+            countryId:u1.countryId,
+            alive:true,
+            resources:0,
+            children:0,
+            spouseId:'',
+            pregnant:false,
+            lastRepro:this.world.time});
         }
       }
     }
     // war phase: check boundaries
-    for(const c1 of this.world.countries){
-      for(const c2 of this.world.countries){
+    for(let c1i=0;c1i<this.world.countries.length;c1i++){
+      const c1=this.world.countries[c1i];
+      for(let c2i=0;c2i<this.world.countries.length;c2i++){
+        const c2=this.world.countries[c2i];
         if(c1.id===c2.id) continue;
         let battleOccurred = false;
-        for(const u1 of this.world.units){
+        for(let u1i=0;u1i<this.world.units.length;u1i++){
+          const u1=this.world.units[u1i];
           if(u1.countryId!==c1.id || !u1.alive || u1.type!=="military") continue;
-          for(const u2 of this.world.units){
+          for(let u2i=0;u2i<this.world.units.length;u2i++){
+            const u2=this.world.units[u2i];
             if(u2.countryId!==c2.id || !u2.alive || u2.type!=="military") continue;
-            const dx=u2.position.x-u1.position.x;const dy=u2.position.y-u1.position.y;const dist=Math.sqrt(dx*dx+dy*dy);
+            const dx=u2.position.x-u1.position.x, dy=u2.position.y-u1.position.y;
+            const dist=Math.sqrt(dx*dx+dy*dy);
             if(dist<24){
               // battle
               if(u1.energy>u2.energy)u2.alive=false;else u1.alive=false;
