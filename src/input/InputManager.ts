@@ -6,7 +6,7 @@ export class InputManager {
   camera: Camera;
   isDragging: boolean = false;
   lastMousePos: Vec2 = { x: 0, y: 0 };
-  onSpawnUnit?: (worldPos: Vec2) => void;
+  onLeftClick?: (worldPos: Vec2) => void;
 
   constructor(canvas: HTMLCanvasElement, camera: Camera) {
     this.canvas = canvas;
@@ -15,10 +15,13 @@ export class InputManager {
   }
 
   setupListeners(): void {
+    let mouseDownPos: Vec2 | null = null;
+
     // Перемещение камеры мышью
     this.canvas.addEventListener('mousedown', (e: MouseEvent) => {
       if (e.button === 0) {
-        // Левая кнопка - перетаскивание
+        // Левая кнопка
+        mouseDownPos = { x: e.clientX, y: e.clientY };
         this.isDragging = true;
         this.lastMousePos = { x: e.clientX, y: e.clientY };
       }
@@ -36,12 +39,32 @@ export class InputManager {
       }
     });
 
-    this.canvas.addEventListener('mouseup', () => {
+    this.canvas.addEventListener('mouseup', (e: MouseEvent) => {
+      if (e.button === 0 && mouseDownPos && this.onLeftClick) {
+        // Проверяем, что это был клик, а не драг
+        const dx = e.clientX - mouseDownPos.x;
+        const dy = e.clientY - mouseDownPos.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < 5) {
+          // Это клик!
+          const worldPos = screenToWorld(
+            { x: e.offsetX, y: e.offsetY },
+            this.camera,
+            this.canvas.width,
+            this.canvas.height
+          );
+          this.onLeftClick(worldPos);
+        }
+      }
+
       this.isDragging = false;
+      mouseDownPos = null;
     });
 
     this.canvas.addEventListener('mouseleave', () => {
       this.isDragging = false;
+      mouseDownPos = null;
     });
 
     // Зум колёсиком мыши
@@ -54,21 +77,6 @@ export class InputManager {
       // Ограничения зума
       if (newZoom >= 0.1 && newZoom <= 5) {
         this.camera.zoom = newZoom;
-      }
-    });
-
-    // Спавн юнита по правой кнопке мыши
-    this.canvas.addEventListener('contextmenu', (e: MouseEvent) => {
-      e.preventDefault();
-
-      if (this.onSpawnUnit) {
-        const worldPos = screenToWorld(
-          { x: e.offsetX, y: e.offsetY },
-          this.camera,
-          this.canvas.width,
-          this.canvas.height
-        );
-        this.onSpawnUnit(worldPos);
       }
     });
 
