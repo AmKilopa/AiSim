@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AiSim - AI-driven Simulation</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        overflow: hidden;
+        background: #000;
+        color: #fff;
+      }
+
+      #canvas {
+        display: block;
+        cursor: grab;
+      }
+
+      #canvas:active {
+        cursor: grabbing;
+      }
+
+      #ui {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px solid #333;
+        min-width: 250px;
+      }
+
+      #ui h1 {
+        font-size: 24px;
+        margin-bottom: 15px;
+        color: #00ff88;
+      }
+
+      #stats {
+        margin-bottom: 20px;
+        font-size: 14px;
+      }
+
+      #stats div {
+        margin: 5px 0;
+      }
+
+      button {
+        width: 100%;
+        padding: 10px;
+        margin: 5px 0;
+        font-size: 14px;
+        font-weight: bold;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      #startBtn {
+        background: #00ff88;
+        color: #000;
+      }
+
+      #startBtn:hover:not(:disabled) {
+        background: #00cc6a;
+      }
+
+      #stopBtn {
+        background: #ff3333;
+        color: #fff;
+      }
+
+      #stopBtn:hover:not(:disabled) {
+        background: #cc0000;
+      }
+
+      #addCountryBtn {
+        background: #3388ff;
+        color: #fff;
+      }
+
+      #addCountryBtn:hover {
+        background: #2266cc;
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .controls {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #333;
+        font-size: 12px;
+        color: #888;
+      }
+
+      .controls div {
+        margin: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+
+    <div id="ui">
+      <h1>AiSim</h1>
+
+      <div id="stats">
+        <div><strong>Время:</strong> 0s</div>
+        <div><strong>Юнитов:</strong> 0 / 0</div>
+        <div><strong>Стран:</strong> 0</div>
+        <div><strong>Ср. фитнес:</strong> 0.00</div>
+        <div><strong>Зум:</strong> 1.00x</div>
+      </div>
+
+      <button id="startBtn">START</button>
+      <button id="stopBtn" disabled>STOP</button>
+      <button id="addCountryBtn">Добавить страну</button>
+
+      <div class="controls">
+        <div><strong>Управление:</strong></div>
+        <div>• Мышь + перетаскивание - двигать камеру</div>
+        <div>• Колёсико - зум</div>
+        <div>• WASD / Стрелки - движение</div>
+        <div>• +/- - зум</div>
+        <div>• Правая кнопка мыши - спавн юнита</div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
