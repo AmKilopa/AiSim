@@ -73,9 +73,10 @@ export class Simulation {
       }
     }
     // war phase: check boundaries
-defense: for(const c1 of this.world.countries){
+    for(const c1 of this.world.countries){
       for(const c2 of this.world.countries){
         if(c1.id===c2.id) continue;
+        let battleOccurred = false;
         for(const u1 of this.world.units){
           if(u1.countryId!==c1.id || !u1.alive || u1.type!=="military") continue;
           for(const u2 of this.world.units){
@@ -84,10 +85,13 @@ defense: for(const c1 of this.world.countries){
             if(dist<24){
               // battle
               if(u1.energy>u2.energy)u2.alive=false;else u1.alive=false;
-              continue defense;
+              battleOccurred = true;
+              break;
             }
           }
+          if (battleOccurred) break;
         }
+        if (battleOccurred) break;
       }
     }
     // normal update
